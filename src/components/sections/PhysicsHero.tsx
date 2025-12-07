@@ -103,65 +103,47 @@ export function PhysicsHero() {
 
         Composite.add(engine.world, [...bodies, ground, leftWall, rightWall]);
 
-        // Add mouse control
+        // Create mouse control
         const mouse = Mouse.create(render.canvas);
-
-        // Disable mouse wheel capture to allow scrolling
-        // @ts-expect-error - Matter.js types might not include this internal property
-        mouse.element.removeEventListener("wheel", mouse.mousewheel);
-        // @ts-expect-error - Matter.js types might not include this internal property
-        mouse.element.removeEventListener("DOMMouseScroll", mouse.mousewheel);
+        mouse.pixelRatio = window.devicePixelRatio; // Fix for high DPI touch coordinates
 
         // Mobile Scroll Fix:
-        // We need to manually handle touch events to distinguish between "dragging a ball" and "scrolling the page".
-        // Matter.js by default prevents touchmove which blocks scrolling.
+        // Matter.js aggressively allows scrolling/zooming by default (via preventDefault on touchmove).
+        // We need to detach its default listeners and handle them manually to allow page scrolling.
 
-        // Remove default touch listeners added by Matter.Mouse.create
+        // Remove default listeners
         // @ts-expect-error - accessing internal listeners
-        mouse.element.removeEventListener('touchmove', mouse.mousemove);
+        mouse.element.removeEventListener("wheel", mouse.mousewheel);
         // @ts-expect-error - accessing internal listeners
-        mouse.element.removeEventListener('touchstart', mouse.mousedown);
+        mouse.element.removeEventListener("DOMMouseScroll", mouse.mousewheel);
         // @ts-expect-error - accessing internal listeners
-        mouse.element.removeEventListener('touchend', mouse.mouseup);
+        mouse.element.removeEventListener("touchmove", mouse.mousemove);
+        // @ts-expect-error - accessing internal listeners
+        mouse.element.removeEventListener("touchstart", mouse.mousedown);
+        // @ts-expect-error - accessing internal listeners
+        mouse.element.removeEventListener("touchend", mouse.mouseup);
 
-        // Add custom listener for touchstart to detect if we hit a body
-        mouse.element.addEventListener('touchstart', (e: TouchEvent) => {
+        // Custom Touch Start
+        mouse.element.addEventListener("touchstart", (e: TouchEvent) => {
             // @ts-expect-error - internal mapping
-            mouse.mousedown(e); // Let Matter update its internal state
-
-            // Check if we touched a body using Matter.Query
-            const touch = e.touches[0];
-            const position = { x: touch.clientX, y: touch.clientY };
-            // Querying bodies directly might be expensive, but acceptable for touchstart (once per gesture)
-            const bounds = render.bounds;
-            // Adjust position for view offset if any (not used here but good practice)
-            // Simple point check:
-            const hit = Matter.Query.point(bodies, position);
-
-            if (hit.length > 0) {
-                // If we touched a body, we want to DRAG -> Prevent Default (stop scroll)
-                // However, standard passive listeners can't prevent default.
-                // We rely on touch-action: none for the specific interaction or non-passive listener.
-                // But we want pan-y generally.
-                // Actually, just changing cursor or let constraint handle it.
-            }
+            mouse.mousedown(e);
         }, { passive: false });
 
-        // Add custom touchmove
-        mouse.element.addEventListener('touchmove', (e: TouchEvent) => {
-            // Check if we are currently dragging something (constraint.body)
+        // Custom Touch Move
+        mouse.element.addEventListener("touchmove", (e: TouchEvent) => {
             if (mouseConstraint.body) {
-                e.preventDefault(); // Stop scrolling while dragging
+                // If dragging a body, block scroll
+                e.preventDefault();
             }
             // @ts-expect-error - internal mapping
             mouse.mousemove(e);
         }, { passive: false });
 
-        // Add custom touchend
-        mouse.element.addEventListener('touchend', (e: TouchEvent) => {
+        // Custom Touch End
+        mouse.element.addEventListener("touchend", (e: TouchEvent) => {
             // @ts-expect-error - internal mapping
             mouse.mouseup(e);
-        });
+        }, { passive: false });
 
 
         const mouseConstraint = MouseConstraint.create(engine, {
@@ -200,16 +182,16 @@ export function PhysicsHero() {
                 });
             }
 
-            // Respawn logic: If balls fall out of world (due to resize/scroll bugs), reset them
-            const bottomLimit = window.innerHeight + 100; // Tighter limit
+            // Respawn logic
+            const bottomLimit = window.innerHeight + 100;
             bodies.forEach((body) => {
                 if (body.position.y > bottomLimit) {
                     Matter.Body.setPosition(body, {
-                        x: Math.random() * (window.innerWidth - 1.00) + 50,
+                        x: Math.random() * (window.innerWidth - 100) + 50,
                         y: -50 - Math.random() * 200
                     });
                     Matter.Body.setVelocity(body, { x: 0, y: 0 });
-                    Matter.Sleeping.set(body, false); // Wake up!
+                    Matter.Sleeping.set(body, false);
                 }
             });
         });
@@ -251,11 +233,18 @@ export function PhysicsHero() {
             });
         });
 
-        // Handle resize
+        // Handle resize with address bar safety
+        let lastWidth = window.innerWidth;
         let resizeTimeout: NodeJS.Timeout;
+
         const handleResize = () => {
             clearTimeout(resizeTimeout);
             resizeTimeout = setTimeout(() => {
+                const newWidth = window.innerWidth;
+                // Ignore vertical-only resizes (address bar toggle) to prevent physics jumps
+                if (newWidth === lastWidth) return;
+
+                lastWidth = newWidth;
                 render.canvas.width = window.innerWidth;
                 render.canvas.height = window.innerHeight;
 
@@ -272,10 +261,9 @@ export function PhysicsHero() {
                 Matter.Body.setPosition(leftWall, { x: -wallThickness / 2, y: window.innerHeight / 2 });
                 Matter.Body.setVertices(leftWall, Matter.Bodies.rectangle(-wallThickness / 2, window.innerHeight / 2, wallThickness, window.innerHeight).vertices);
 
-                // Wake up all bodies on resize to prevent them from sleeping in void
                 bodies.forEach(body => Matter.Sleeping.set(body, false));
 
-            }, 150); // Faster throttle
+            }, 200);
         };
 
         window.addEventListener("resize", handleResize);
