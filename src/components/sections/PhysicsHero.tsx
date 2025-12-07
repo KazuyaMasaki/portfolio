@@ -108,10 +108,11 @@ export function PhysicsHero() {
         mouse.pixelRatio = window.devicePixelRatio; // Fix for high DPI touch coordinates
 
         // Mobile Scroll Fix:
-        // Matter.js aggressively allows scrolling/zooming by default (via preventDefault on touchmove).
-        // We need to detach its default listeners and handle them manually to allow page scrolling.
+        // We rely on CSS `touch-action: pan-y` to allow vertical scrolling.
+        // We MUST NOT call preventDefault() on touchmove, otherwise the browser cannot scroll.
+        render.canvas.style.touchAction = "pan-y";
 
-        // Remove default listeners
+        // Remove default listeners that block scrolling
         // @ts-expect-error - accessing internal listeners
         mouse.element.removeEventListener("wheel", mouse.mousewheel);
         // @ts-expect-error - accessing internal listeners
@@ -131,10 +132,10 @@ export function PhysicsHero() {
 
         // Custom Touch Move
         mouse.element.addEventListener("touchmove", (e: TouchEvent) => {
-            if (mouseConstraint.body) {
-                // If dragging a body, block scroll
-                e.preventDefault();
-            }
+            // Do NOT prevent default here. Let the browser handle scrolling.
+            // If the browser decides it's a scroll, it will cancel these events.
+            // If it's a horizontal swipe (that doesn't trigger nav), we might still get events.
+
             // @ts-expect-error - internal mapping
             mouse.mousemove(e);
         }, { passive: false });
@@ -143,6 +144,12 @@ export function PhysicsHero() {
         mouse.element.addEventListener("touchend", (e: TouchEvent) => {
             // @ts-expect-error - internal mapping
             mouse.mouseup(e);
+        }, { passive: false });
+
+        // Custom Touch Cancel (Important for when scroll takes over)
+        mouse.element.addEventListener("touchcancel", (e: TouchEvent) => {
+            // @ts-expect-error - internal mapping
+            mouse.mouseup(e); // Release any grabbed body
         }, { passive: false });
 
 
