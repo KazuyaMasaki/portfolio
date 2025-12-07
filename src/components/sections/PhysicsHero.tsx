@@ -344,7 +344,7 @@ export function PhysicsHero() {
                         View Interests
                         <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                     </Button>
-                    <Button size="lg" variant="outline" className="w-full md:w-auto bg-white/80 backdrop-blur-sm shadow-lg">
+                    <Button size="lg" variant="outline" className="w-full md:w-auto bg-white/80 backdrop-blur-sm shadow-lg" onClick={() => document.getElementById('philosophy')?.scrollIntoView({ behavior: 'smooth' })}>
                         Read My Philosophy
                     </Button>
                 </motion.div>
