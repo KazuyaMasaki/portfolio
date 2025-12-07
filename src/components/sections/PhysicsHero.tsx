@@ -298,7 +298,7 @@ export function PhysicsHero() {
                         initial={{ y: 50, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
                         transition={{ delay: 0.4, type: "spring" }}
-                        className="text-4xl md:text-6xl font-heading font-bold text-gray-900 leading-tight drop-shadow-sm bg-white/30 backdrop-blur-sm rounded-3xl p-4 inline-block"
+                        className="text-4xl md:text-6xl font-heading font-bold text-gray-900 leading-tight drop-shadow-sm bg-white/30 backdrop-blur-sm rounded-3xl p-4 inline-block pointer-events-auto"
                     >
                         Building the Future with <br />
                         <span className="text-candy-pink">AI</span> × <span className="text-candy-blue">Frontend</span> × <span className="text-candy-yellow">Game</span>
@@ -328,7 +328,7 @@ export function PhysicsHero() {
                     initial={{ y: 50, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     transition={{ delay: 0.6, type: "spring" }}
-                    className="text-lg md:text-xl text-gray-700 mb-8 max-w-4xl mx-auto font-medium bg-white/30 backdrop-blur-sm rounded-xl p-4 leading-relaxed"
+                    className="text-lg md:text-xl text-gray-700 mb-8 max-w-4xl mx-auto font-medium bg-white/30 backdrop-blur-sm rounded-xl p-4 leading-relaxed pointer-events-auto"
                 >
                     コードを書くプログラマーから、UXを創造するエンジニアへ。<br className="hidden md:block" />
                     AIエージェントを操り、圧倒的なスピードでユーザーにWebとゲームの新しい体験を届けます。
