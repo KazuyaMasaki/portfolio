@@ -136,7 +136,6 @@ export function PhysicsHero() {
         Events.on(runner, "beforeUpdate", () => {
             const time = engine.timing.timestamp;
 
-
             // Auto-movement: Randomly push bodies slightly
             if (Math.floor(time) % 2000 < 20) { // Every ~2 seconds
                 bodies.forEach((body) => {
@@ -148,6 +147,18 @@ export function PhysicsHero() {
                     }
                 });
             }
+
+            // Respawn logic: If balls fall out of world (due to resize/scroll bugs), reset them
+            const bottomLimit = window.innerHeight + 200;
+            bodies.forEach((body) => {
+                if (body.position.y > bottomLimit) {
+                    Matter.Body.setPosition(body, {
+                        x: Math.random() * (window.innerWidth - 100) + 50,
+                        y: -50 - Math.random() * 200
+                    });
+                    Matter.Body.setVelocity(body, { x: 0, y: 0 });
+                }
+            });
         });
 
         // Change cursor on hover
@@ -188,21 +199,32 @@ export function PhysicsHero() {
         });
 
         // Handle resize
+        let resizeTimeout: NodeJS.Timeout;
         const handleResize = () => {
-            render.canvas.width = window.innerWidth;
-            render.canvas.height = window.innerHeight;
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                render.canvas.width = window.innerWidth;
+                render.canvas.height = window.innerHeight;
 
-            // Reposition walls
-            Matter.Body.setPosition(ground, { x: window.innerWidth / 2, y: window.innerHeight + 50 });
-            Matter.Body.setVertices(ground, Matter.Bodies.rectangle(window.innerWidth / 2, window.innerHeight + 50, window.innerWidth, 100).vertices);
+                // Reposition walls
+                Matter.Body.setPosition(ground, { x: window.innerWidth / 2, y: window.innerHeight + 50 });
+                Matter.Body.setVertices(ground, Matter.Bodies.rectangle(window.innerWidth / 2, window.innerHeight + 50, window.innerWidth, 100).vertices);
 
-            Matter.Body.setPosition(rightWall, { x: window.innerWidth + 50, y: window.innerHeight / 2 });
+                Matter.Body.setPosition(rightWall, { x: window.innerWidth + 50, y: window.innerHeight / 2 });
+                Matter.Body.setPosition(leftWall, { x: -50, y: window.innerHeight / 2 });
+
+                // Also update wall dimensions if needed (height)
+                Matter.Body.setVertices(rightWall, Matter.Bodies.rectangle(window.innerWidth + 50, window.innerHeight / 2, 100, window.innerHeight).vertices);
+                Matter.Body.setVertices(leftWall, Matter.Bodies.rectangle(-50, window.innerHeight / 2, 100, window.innerHeight).vertices);
+
+            }, 300); // Throttle resize
         };
 
         window.addEventListener("resize", handleResize);
 
         return () => {
             window.removeEventListener("resize", handleResize);
+            clearTimeout(resizeTimeout);
             Render.stop(render);
             Runner.stop(runner);
             if (render.canvas) render.canvas.remove();
@@ -214,7 +236,7 @@ export function PhysicsHero() {
     return (
         <section className="relative h-screen min-h-[600px] flex items-center justify-center overflow-hidden">
             {/* Physics Canvas Container */}
-            <div ref={sceneRef} className="absolute inset-0 z-0" />
+            <div ref={sceneRef} className="absolute inset-0 z-0 touch-pan-y" style={{ touchAction: "pan-y" }} />
 
             {/* Overlay Content */}
             <div className="container mx-auto px-4 z-10 text-center pointer-events-none">

@@ -10,6 +10,7 @@ import { Coins, Star } from "lucide-react";
 
 export function Header() {
     const [isScrolled, setIsScrolled] = React.useState(false);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
     const { coins, level } = useGame();
 
     React.useEffect(() => {
@@ -37,7 +38,7 @@ export function Header() {
         >
             <div className="container mx-auto px-4 flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                    <a href="#" className="text-2xl font-heading font-bold text-candy-pink tracking-tight">
+                    <a href="#" className="text-2xl font-heading font-bold text-candy-pink tracking-tight z-50 relative">
                         Kazuya_Masaki<span className="text-gray-800">.Dev</span>
                     </a>
 
@@ -69,12 +70,55 @@ export function Header() {
                     </Button>
                 </nav>
 
-                <div className="md:hidden">
-                    <Button variant="ghost" size="sm">
+                <div className="md:hidden z-50 relative">
+                    <Button variant="ghost" size="sm" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
                         <Menu className="w-6 h-6" />
                     </Button>
                 </div>
             </div>
+
+            {/* Mobile Menu Overlay */}
+            {isMobileMenuOpen && (
+                <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    className="absolute top-0 left-0 right-0 bg-white/95 backdrop-blur-lg shadow-xl p-6 pt-24 md:hidden flex flex-col gap-6 items-center"
+                >
+                    {navItems.map((item) => (
+                        <a
+                            key={item.name}
+                            href={item.href}
+                            className="text-xl font-bold text-gray-800 hover:text-candy-pink"
+                            onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                            {item.name}
+                        </a>
+                    ))}
+                    {/* Mobile HUD */}
+                    <div className="flex items-center gap-4 py-4 border-t border-gray-100 w-full justify-center">
+                        <div className="bg-candy-blue text-white px-3 py-1 rounded-full text-sm font-bold flex items-center gap-1 shadow-sm">
+                            <Star className="w-3 h-3 fill-current" />
+                            {level >= 5 ? "Lv.MAX" : `Lv.${level}`}
+                        </div>
+                        <div className="bg-candy-yellow text-yellow-900 px-3 py-1 rounded-full text-sm font-bold flex items-center gap-1 shadow-sm">
+                            <Coins className="w-3 h-3 fill-current" />
+                            {coins}
+                        </div>
+                    </div>
+                    <Button
+                        size="lg"
+                        variant="primary"
+                        className="w-full"
+                        onClick={() => {
+                            window.location.href = 'mailto:kazuyamasaki706@gmail.com';
+                            setIsMobileMenuOpen(false);
+                        }}
+                    >
+                        Contact Me
+                    </Button>
+                </motion.div>
+            )}
         </motion.header>
     );
 }
